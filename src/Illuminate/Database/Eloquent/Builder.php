@@ -297,7 +297,7 @@ class Builder implements BuilderContract
     /**
      * Add a basic where clause to the query.
      *
-     * @param  (\Closure(static): mixed)|string|array|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  (\Closure(static): mixed)|array<array-key, (\Closure(static): mixed)|literal-string|\Illuminate\Contracts\Database\Query\Expression>|literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @param  string  $boolean
@@ -319,7 +319,7 @@ class Builder implements BuilderContract
     /**
      * Add a basic where clause to the query, and return the first result.
      *
-     * @param  (\Closure(static): mixed)|string|array|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  (\Closure(static): mixed)|array<array-key, (\Closure(static): mixed)|literal-string|\Illuminate\Contracts\Database\Query\Expression>|literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @param  string  $boolean
@@ -333,7 +333,7 @@ class Builder implements BuilderContract
     /**
      * Add an "or where" clause to the query.
      *
-     * @param  (\Closure(static): mixed)|array|string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  (\Closure(static): mixed)|array<array-key, (\Closure(static): mixed)|literal-string|\Illuminate\Contracts\Database\Query\Expression>|literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -350,7 +350,7 @@ class Builder implements BuilderContract
     /**
      * Add a basic "where not" clause to the query.
      *
-     * @param  (\Closure(static): mixed)|string|array|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  (\Closure(static): mixed)|array<array-key, (\Closure(static): mixed)|literal-string|\Illuminate\Contracts\Database\Query\Expression>|literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @param  string  $boolean
@@ -364,7 +364,7 @@ class Builder implements BuilderContract
     /**
      * Add an "or where not" clause to the query.
      *
-     * @param  (\Closure(static): mixed)|array|string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  (\Closure(static): mixed)|array<array-key, (\Closure(static): mixed)|literal-string|\Illuminate\Contracts\Database\Query\Expression>|literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  mixed  $operator
      * @param  mixed  $value
      * @return $this
@@ -377,7 +377,7 @@ class Builder implements BuilderContract
     /**
      * Add an "order by" clause for a timestamp to the query.
      *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @return $this
      */
     public function latest($column = null)
@@ -394,7 +394,7 @@ class Builder implements BuilderContract
     /**
      * Add an "order by" clause for a timestamp to the query.
      *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @return $this
      */
     public function oldest($column = null)
@@ -682,7 +682,7 @@ class Builder implements BuilderContract
     /**
      * Get a single column's value from the first result of a query.
      *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @return mixed
      */
     public function value($column)
@@ -697,7 +697,7 @@ class Builder implements BuilderContract
     /**
      * Get a single column's value from the first result of a query if it's the sole matching record.
      *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @return mixed
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException<TModel>
@@ -713,7 +713,7 @@ class Builder implements BuilderContract
     /**
      * Get a single column's value from the first result of the query or throw an exception.
      *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @return mixed
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException<TModel>
@@ -930,7 +930,7 @@ class Builder implements BuilderContract
     /**
      * Get a collection with the values of a given column.
      *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  string|null  $key
      * @return \Illuminate\Support\Collection<array-key, mixed>
      */
@@ -1170,7 +1170,7 @@ class Builder implements BuilderContract
     /**
      * Increment a column's value by a given amount.
      *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  float|int  $amount
      * @param  array  $extra
      * @return int
@@ -1185,7 +1185,7 @@ class Builder implements BuilderContract
     /**
      * Decrement a column's value by a given amount.
      *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @param  float|int  $amount
      * @param  array  $extra
      * @return int
@@ -1913,7 +1913,7 @@ class Builder implements BuilderContract
     /**
      * Qualify the given column name by the model's table.
      *
-     * @param  string|\Illuminate\Contracts\Database\Query\Expression  $column
+     * @param  literal-string|\Illuminate\Contracts\Database\Query\Expression  $column
      * @return string
      */
     public function qualifyColumn($column)
