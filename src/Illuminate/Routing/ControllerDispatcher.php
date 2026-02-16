@@ -2,7 +2,9 @@
 
 namespace Illuminate\Routing;
 
+use Illuminate\Auth\Attributes\Authorize;
 use Illuminate\Container\Container;
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Routing\Contracts\ControllerDispatcher as ControllerDispatcherContract;
 use Illuminate\Support\Collection;
 
@@ -37,6 +39,8 @@ class ControllerDispatcher implements ControllerDispatcherContract
      */
     public function dispatch(Route $route, $controller, $method)
     {
+        $this->authorizeAttribute($route, $controller, $method, $route->parameters());
+
         $parameters = $this->resolveParameters($route, $controller, $method);
 
         if (method_exists($controller, 'callAction')) {
@@ -78,5 +82,49 @@ class ControllerDispatcher implements ControllerDispatcherContract
             ->reject(fn ($data) => static::methodExcludedByOptions($method, $data['options']))
             ->pluck('middleware')
             ->all();
+    }
+
+    /**
+     * Authorize the #[Authorize] attribute on the controller method.
+     *
+     * @param  \Illuminate\Routing\Route  $route
+     * @param  mixed  $controller
+     * @param  string  $method
+     * @param  array  $parameters
+     * @return void
+     */
+    protected function authorizeAttribute(Route $route, $controller, $method, array $parameters): void
+    {
+        $classReflection = new \ReflectionClass($controller);
+
+        if (! $classReflection->hasMethod($method)) {
+            return;
+        }
+
+        $methodReflection = $classReflection->getMethod($method);
+        $methodAttributes = $methodReflection->getAttributes(Authorize::class);
+
+        foreach ($methodAttributes as $attribute) {
+            $arguments = [];
+
+            foreach ((array) ($attribute->getArguments()[1] ?? []) as $attributeArguments) {
+                if (str_starts_with($attributeArguments, '$')) {
+                    $parameterName = substr($attributeArguments, 1);
+
+                    if (! array_key_exists($parameterName, $parameters)) {
+                        throw new \InvalidArgumentException("Missing parameter [{$parameterName}] for authorization.");
+                    }
+
+                    $arguments[] = $parameters[$parameterName];
+                } else {
+                    $arguments[] = $attributeArguments;
+                }
+            }
+
+            $this->container->make(Gate::class)->authorize(
+                $attribute->getArguments()[0],
+                $arguments,
+            );
+        }
     }
 }
