@@ -248,6 +248,10 @@ trait HasTimestamps
      */
     public static function isIgnoringTimestamps($class = null)
     {
+        if (static::$ignoreTimestampsOn === []) {
+            return false;
+        }
+
         $class ??= static::class;
 
         return array_any(static::$ignoreTimestampsOn, fn ($ignoredClass) => $class === $ignoredClass || is_subclass_of($class, $ignoredClass));

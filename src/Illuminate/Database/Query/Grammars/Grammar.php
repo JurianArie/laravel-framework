@@ -264,9 +264,10 @@ class Grammar extends BaseGrammar
      */
     protected function compileWheresToArray($query)
     {
-        return (new Collection($query->wheres))
-            ->map(fn ($where) => $where['boolean'].' '.$this->{"where{$where['type']}"}($query, $where))
-            ->all();
+        return array_map(
+            fn ($where) => $where['boolean'].' '.$this->{"where{$where['type']}"}($query, $where),
+            $query->wheres,
+        );
     }
 
     /**
@@ -1291,9 +1292,10 @@ class Grammar extends BaseGrammar
         // We need to build a list of parameter place-holders of values that are bound
         // to the query. Each insert should have the exact same number of parameter
         // bindings so we will loop through the record and parameterize them all.
-        $parameters = (new Collection($values))
-            ->map(fn ($record) => '('.$this->parameterize($record).')')
-            ->implode(', ');
+        $parameters = implode(', ', array_map(
+            fn ($record) => '('.$this->parameterize($record).')',
+            $values,
+        ));
 
         return "insert into $table ($columns) values $parameters";
     }

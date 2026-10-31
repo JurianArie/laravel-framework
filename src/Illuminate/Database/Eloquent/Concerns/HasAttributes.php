@@ -10,6 +10,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Contracts\Database\Eloquent\CastsInboundAttributes;
 use Illuminate\Contracts\Support\Arrayable;
@@ -101,6 +102,13 @@ trait HasAttributes
     protected $attributeCastCache = [];
 
     /**
+     * The merged casts of each model class, along with the values they were merged from.
+     *
+     * @var array<class-string, array{array, string, string, array}>
+     */
+    protected static $mergedCastsCache = [];
+
+    /**
      * The built-in, primitive cast types supported by Eloquent.
      *
      * @var string[]
@@ -176,6 +184,20 @@ trait HasAttributes
      * @var array
      */
     protected static $getAttributeMutatorCache = [];
+
+    /**
+     * The cache of the "get" mutator method names for each class.
+     *
+     * @var array<class-string, array<string, bool>>
+     */
+    protected static $getMutatorCache = [];
+
+    /**
+     * The cache of the "set" mutator method names for each class.
+     *
+     * @var array<class-string, array<string, bool>>
+     */
+    protected static $setMutatorCache = [];
 
     /**
      * The cache of the "Attribute" return type marked mutated, settable attributes for each class.
@@ -666,7 +688,8 @@ trait HasAttributes
      */
     public function hasGetMutator($key)
     {
-        return method_exists($this, 'get'.Str::studly($key).'Attribute');
+        return static::$getMutatorCache[static::class][$key]
+            ??= method_exists($this, 'get'.Str::studly($key).'Attribute');
     }
 
     /**
@@ -924,27 +947,25 @@ trait HasAttributes
      */
     protected function getClassCastableAttributeValue($key, $value)
     {
+        if (isset($this->classCastCache[$key])) {
+            return $this->classCastCache[$key];
+        }
+
         $caster = $this->resolveCasterClass($key);
 
-        $objectCachingDisabled = $caster->withoutObjectCaching ?? false;
+        $value = $caster instanceof CastsInboundAttributes
+            ? $value
+            : $caster->get($this, $key, $value, $this->attributes);
 
-        if (isset($this->classCastCache[$key]) && ! $objectCachingDisabled) {
-            return $this->classCastCache[$key];
+        if ($caster instanceof CastsInboundAttributes ||
+            ! is_object($value) ||
+            ($caster->withoutObjectCaching ?? false)) {
+            unset($this->classCastCache[$key]);
         } else {
-            $value = $caster instanceof CastsInboundAttributes
-                ? $value
-                : $caster->get($this, $key, $value, $this->attributes);
-
-            if ($caster instanceof CastsInboundAttributes ||
-                ! is_object($value) ||
-                $objectCachingDisabled) {
-                unset($this->classCastCache[$key]);
-            } else {
-                $this->classCastCache[$key] = $value;
-            }
-
-            return $value;
+            $this->classCastCache[$key] = $value;
         }
+
+        return $value;
     }
 
     /**
@@ -1102,6 +1123,18 @@ trait HasAttributes
             $value = $this->fromDateTime($value);
         }
 
+        if (! array_key_exists($key, $this->getCasts())) {
+            if (str_contains($key, '->')) {
+                return $this->fillJsonAttribute($key, $value);
+            }
+
+            $this->attributes[$key] = $value;
+
+            unset($this->attributeCastCache[$key]);
+
+            return $this;
+        }
+
         if ($this->isEnumCastable($key)) {
             $this->setEnumCastableAttribute($key, $value);
 
@@ -1148,7 +1181,8 @@ trait HasAttributes
      */
     public function hasSetMutator($key)
     {
-        return method_exists($this, 'set'.Str::studly($key).'Attribute');
+        return static::$setMutatorCache[static::class][$key]
+            ??= method_exists($this, 'set'.Str::studly($key).'Attribute');
     }
 
     /**
@@ -1661,6 +1695,14 @@ trait HasAttributes
      */
     protected function serializeDate(DateTimeInterface $date)
     {
+        $year = (int) $date->format('Y');
+
+        if ($year > 0 && $year <= 9999) {
+            return DateTimeImmutable::createFromInterface($date)
+                ->setTimezone(new DateTimeZone('UTC'))
+                ->format('Y-m-d\\TH:i:s.u\\Z');
+        }
+
         return $date instanceof DateTimeImmutable ?
             CarbonImmutable::instance($date)->toJSON() :
             Carbon::instance($date)->toJSON();
@@ -1725,11 +1767,24 @@ trait HasAttributes
      */
     public function getCasts()
     {
-        if ($this->getIncrementing()) {
-            return array_merge([$this->getKeyName() => $this->getKeyType()], $this->casts);
+        if (! $this->getIncrementing()) {
+            return $this->casts;
         }
 
-        return $this->casts;
+        $keyName = $this->getKeyName();
+        $keyType = $this->getKeyType();
+
+        $cached = static::$mergedCastsCache[static::class] ?? null;
+
+        if ($cached !== null && $cached[1] === $keyName && $cached[2] === $keyType && $cached[0] === $this->casts) {
+            return $cached[3];
+        }
+
+        $casts = array_merge([$keyName => $keyType], $this->casts);
+
+        static::$mergedCastsCache[static::class] = [$this->casts, $keyName, $keyType, $casts];
+
+        return $casts;
     }
 
     /**
@@ -2260,9 +2315,17 @@ trait HasAttributes
      */
     public function isDirty($attributes = null)
     {
-        return $this->hasChanges(
-            $this->getDirty(), is_array($attributes) ? $attributes : func_get_args()
-        );
+        $attributes = is_array($attributes) ? $attributes : func_get_args();
+
+        $current = $this->getAttributes();
+
+        foreach (empty($attributes) ? array_keys($current) : Arr::wrap($attributes) as $attribute) {
+            if (array_key_exists($attribute, $current) && ! $this->originalIsEquivalent($attribute)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -2392,8 +2455,11 @@ trait HasAttributes
             return false;
         }
 
-        $attribute = Arr::get($this->attributes, $key);
-        $original = Arr::get($this->original, $key);
+        $attribute = array_key_exists($key, $this->attributes)
+            ? $this->attributes[$key]
+            : Arr::get($this->attributes, $key);
+
+        $original = $this->original[$key];
 
         if ($attribute === $original) {
             return true;

@@ -192,6 +192,13 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
     protected static $traitInitializers = [];
 
     /**
+     * The table names derived from each model's class name.
+     *
+     * @var array<class-string<self>, string>
+     */
+    protected static $guessedTableNames = [];
+
+    /**
      * The array of global scopes on the model.
      *
      * @var array
@@ -802,7 +809,9 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
 
         $model->setTable($this->getTable());
 
-        $model->mergeCasts($this->casts);
+        if ($model->casts !== $this->casts) {
+            $model->mergeCasts($this->casts);
+        }
 
         $model->fill((array) $attributes);
 
@@ -2354,7 +2363,8 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
      */
     public function getTable()
     {
-        return $this->table ?? Str::snake(Str::pluralStudly(class_basename($this)));
+        return $this->table ?? static::$guessedTableNames[static::class]
+            ??= Str::snake(Str::pluralStudly(class_basename($this)));
     }
 
     /**
