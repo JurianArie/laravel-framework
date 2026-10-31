@@ -90,6 +90,13 @@ class Validator implements ValidatorContract
     protected $rules;
 
     /**
+     * The parsed rules of each attribute, along with the rules they were parsed from.
+     *
+     * @var array<string, array{array, array}>
+     */
+    protected $parsedRules = [];
+
+    /**
      * The current rule that is validating.
      *
      * @var string
@@ -675,7 +682,7 @@ class Validator implements ValidatorContract
             $value = data_get($this->getData(), $key, $missingValue);
 
             if ($this->excludeUnvalidatedArrayKeys &&
-                (in_array('array', $rules) || in_array('list', $rules)) &&
+                (in_array('array', $rules, true) || in_array('list', $rules, true)) &&
                 $value !== null &&
                 isset($parentKeys[$key])) {
                 continue;
@@ -776,7 +783,7 @@ class Validator implements ValidatorContract
      */
     protected function dependsOnOtherFields($rule)
     {
-        return in_array($rule, $this->dependentRules);
+        return in_array($rule, $this->dependentRules, true);
     }
 
     /**
@@ -856,7 +863,7 @@ class Validator implements ValidatorContract
      */
     protected function isValidatable($rule, $attribute, $value)
     {
-        if (in_array($rule, $this->excludeRules)) {
+        if (in_array($rule, $this->excludeRules, true)) {
             return true;
         }
 
@@ -893,7 +900,7 @@ class Validator implements ValidatorContract
     protected function isImplicit($rule)
     {
         return $rule instanceof ImplicitRule ||
-               in_array($rule, $this->implicitRules);
+               in_array($rule, $this->implicitRules, true);
     }
 
     /**
@@ -941,7 +948,7 @@ class Validator implements ValidatorContract
      */
     protected function hasNotFailedPreviousRuleIfPresenceRule($rule, $attribute)
     {
-        return in_array($rule, ['Unique', 'Exists']) ? ! $this->messages->has($attribute) : true;
+        return in_array($rule, ['Unique', 'Exists'], true) ? ! $this->messages->has($attribute) : true;
     }
 
     /**
@@ -1022,8 +1029,8 @@ class Validator implements ValidatorContract
         // In case the attribute has any rule that indicates that the field is required
         // and that rule already failed then we should stop validation at this point
         // as now there is no point in calling other rules with this field empty.
-        return $this->hasRule($attribute, $this->implicitRules) &&
-               isset($this->failedRules[$cleanedAttribute]) &&
+        return isset($this->failedRules[$cleanedAttribute]) &&
+               $this->hasRule($attribute, $this->implicitRules) &&
                array_intersect(array_keys($this->failedRules[$cleanedAttribute]), $this->implicitRules);
     }
 
@@ -1045,7 +1052,7 @@ class Validator implements ValidatorContract
 
         $attribute = $this->replacePlaceholderInString($attribute);
 
-        if (in_array($rule, $this->excludeRules)) {
+        if (in_array($rule, $this->excludeRules, true)) {
             return $this->excludeAttribute($attribute);
         }
 
@@ -1198,10 +1205,15 @@ class Validator implements ValidatorContract
 
         $rules = (array) $rules;
 
-        foreach ($this->rules[$attribute] as $rule) {
-            [$rule, $parameters] = ValidationRuleParser::parse($rule);
+        if (($this->parsedRules[$attribute][0] ?? null) !== $this->rules[$attribute]) {
+            $this->parsedRules[$attribute] = [
+                $this->rules[$attribute],
+                array_map(ValidationRuleParser::parse(...), $this->rules[$attribute]),
+            ];
+        }
 
-            if (in_array($rule, $rules)) {
+        foreach ($this->parsedRules[$attribute][1] as [$rule, $parameters]) {
+            if (in_array($rule, $rules, true)) {
                 return [$rule, $parameters];
             }
         }

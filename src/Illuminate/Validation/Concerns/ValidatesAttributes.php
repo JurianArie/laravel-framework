@@ -2498,7 +2498,7 @@ trait ValidatesAttributes
      */
     protected function shouldConvertToBoolean($parameter)
     {
-        return in_array('boolean', $this->rules[$parameter] ?? []);
+        return in_array('boolean', $this->rules[$parameter] ?? [], true);
     }
 
     /**
