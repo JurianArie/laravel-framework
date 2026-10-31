@@ -1076,7 +1076,7 @@ class Container implements ArrayAccess, ContainerContract
      */
     protected function getContextualConcrete($abstract)
     {
-        if ($this->contextual === []) {
+        if ($this->contextual === [] || ! isset($this->contextual[end($this->buildStack)])) {
             return null;
         }
 
@@ -1534,6 +1534,10 @@ class Container implements ArrayAccess, ContainerContract
      */
     protected function fireBeforeResolvingCallbacks($abstract, $parameters = [])
     {
+        if ($this->globalBeforeResolvingCallbacks === [] && $this->beforeResolvingCallbacks === []) {
+            return;
+        }
+
         $this->fireBeforeCallbackArray($abstract, $parameters, $this->globalBeforeResolvingCallbacks);
 
         foreach ($this->beforeResolvingCallbacks as $type => $callbacks) {

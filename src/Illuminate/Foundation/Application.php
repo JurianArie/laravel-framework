@@ -1053,24 +1053,6 @@ class Application extends Container implements ApplicationContract, CachesConfig
      *
      * @template TClass of object
      *
-     * @param  string|class-string<TClass>  $abstract
-     * @param  array  $parameters
-     * @return ($abstract is class-string<TClass> ? TClass : mixed)
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function make($abstract, array $parameters = [])
-    {
-        $this->loadDeferredProviderIfNeeded($abstract = $this->getAlias($abstract));
-
-        return parent::make($abstract, $parameters);
-    }
-
-    /**
-     * Resolve the given type from the container.
-     *
-     * @template TClass of object
-     *
      * @param  string|class-string<TClass>|callable  $abstract
      * @param  array  $parameters
      * @param  bool  $raiseEvents
