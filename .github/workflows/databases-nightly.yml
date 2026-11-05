@@ -1,16 +1,13 @@
 name: databases-nightly
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
+  push: ~
 
 permissions:
   contents: read
 
 jobs:
   mysql_innovation:
-    if: github.repository == 'laravel/framework'
-
     runs-on: ubuntu-26.04
     timeout-minutes: 10
 
@@ -46,8 +43,6 @@ jobs:
           DB_SOCKET: /var/run/mysqld/mysqld.sock
 
   mariadb:
-    if: github.repository == 'laravel/framework'
-
     runs-on: ubuntu-26.04
     continue-on-error: true
     timeout-minutes: 10
