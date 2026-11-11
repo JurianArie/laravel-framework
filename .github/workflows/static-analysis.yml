@@ -1,10 +1,7 @@
 name: static analysis
 
 on:
-  push:
-    branches:
-      - master
-      - '*.x'
+  push: ~
   pull_request:
 
 permissions:
