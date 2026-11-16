@@ -296,9 +296,15 @@ class ParallelTesting
      */
     public function token()
     {
-        return $this->tokenResolver
-            ? call_user_func($this->tokenResolver)
-            : ($_SERVER['TEST_TOKEN'] ?? false);
+        if ($this->tokenResolver) {
+            return call_user_func($this->tokenResolver);
+        }
+
+        if (isset($_SERVER['PHPUNIT_WORKER_ID'])) {
+            return (string) ((int) $_SERVER['PHPUNIT_WORKER_ID'] + 1);
+        }
+
+        return $_SERVER['TEST_TOKEN'] ?? false;
     }
 
     /**
@@ -321,6 +327,6 @@ class ParallelTesting
      */
     protected function inParallel()
     {
-        return ! empty($_SERVER['LARAVEL_PARALLEL_TESTING']) && $this->token();
+        return (! empty($_SERVER['LARAVEL_PARALLEL_TESTING']) || isset($_SERVER['PHPUNIT_WORKER_ID'])) && $this->token();
     }
 }

@@ -83,6 +83,50 @@ class ParallelTestingTest extends TestCase
         $this->assertSame('1', (string) $parallelTesting->token());
     }
 
+    public function testTokenFromPhpUnitWorker(): void
+    {
+        $parallelTesting = new ParallelTesting(Container::getInstance());
+
+        $_SERVER['PHPUNIT_WORKER_ID'] = '0';
+        $_SERVER['TEST_TOKEN'] = '5';
+
+        $this->assertSame('1', $parallelTesting->token());
+
+        $_SERVER['PHPUNIT_WORKER_ID'] = '2';
+
+        $this->assertSame('3', $parallelTesting->token());
+
+        $parallelTesting->resolveTokenUsing(function () {
+            return '7';
+        });
+
+        $this->assertSame('7', $parallelTesting->token());
+    }
+
+    #[DataProvider('callbacks')]
+    public function testCallbacksInPhpUnitWorker($callback): void
+    {
+        unset($_SERVER['LARAVEL_PARALLEL_TESTING']);
+
+        $parallelTesting = new ParallelTesting(Container::getInstance());
+        $caller = 'call'.ucfirst($callback).'Callbacks';
+
+        $state = false;
+
+        $parallelTesting->{$callback}(function ($token) use (&$state) {
+            $this->assertSame('1', $token);
+            $state = true;
+        });
+
+        $parallelTesting->{$caller}($this);
+        $this->assertFalse($state);
+
+        $_SERVER['PHPUNIT_WORKER_ID'] = '0';
+
+        $parallelTesting->{$caller}($this);
+        $this->assertTrue($state);
+    }
+
     public static function callbacks()
     {
         return [
@@ -99,6 +143,6 @@ class ParallelTestingTest extends TestCase
     {
         Container::setInstance(null);
 
-        unset($_SERVER['LARAVEL_PARALLEL_TESTING']);
+        unset($_SERVER['LARAVEL_PARALLEL_TESTING'], $_SERVER['PHPUNIT_WORKER_ID'], $_SERVER['TEST_TOKEN']);
     }
 }
