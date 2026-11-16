@@ -5,7 +5,6 @@ namespace Illuminate\Tests\Integration\Database\MySql;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Orchestra\Testbench\Attributes\RequiresDatabase;
 use PHPUnit\Framework\Attributes\RequiresOperatingSystem;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 
@@ -31,7 +30,6 @@ class DatabaseMySqlSchemaBuilderTest extends MySqlTestCase
         Schema::drop('users');
     }
 
-    #[RequiresDatabase('mysql', '>=8.0.13')]
     public function testGetRawIndex()
     {
         Schema::create('table', function (Blueprint $table) {
