@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\Concerns\AsPivot;
 use Illuminate\Database\Eloquent\Relations\Concerns\InteractsWithDictionary;
 use Illuminate\Database\Eloquent\Relations\Concerns\InteractsWithPivotTable;
 use Illuminate\Database\Eloquent\Relations\Concerns\SupportsPivotInverseRelations;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection as BaseCollection;
@@ -1704,15 +1703,7 @@ class BelongsToMany extends Relation
         if ($this->parent->exists) {
             $this->query->limit($value);
         } else {
-            $column = $this->getExistenceCompareKey();
-
-            $grammar = $this->query->getQuery()->getGrammar();
-
-            if ($grammar instanceof MySqlGrammar && $grammar->useLegacyGroupLimit($this->query->getQuery())) {
-                $column = 'pivot_'.last(explode('.', $column));
-            }
-
-            $this->query->groupLimit($value, $column);
+            $this->query->groupLimit($value, $this->getExistenceCompareKey());
         }
 
         return $this;

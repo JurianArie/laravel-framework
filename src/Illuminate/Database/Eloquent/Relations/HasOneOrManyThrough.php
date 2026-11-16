@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\Concerns\InteractsWithDictionary;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection as BaseCollection;
@@ -922,15 +921,7 @@ abstract class HasOneOrManyThrough extends Relation
         if ($this->farParent->exists) {
             $this->query->limit($value);
         } else {
-            $column = $this->getQualifiedFirstKeyName();
-
-            $grammar = $this->query->getQuery()->getGrammar();
-
-            if ($grammar instanceof MySqlGrammar && $grammar->useLegacyGroupLimit($this->query->getQuery())) {
-                $column = 'laravel_through_key';
-            }
-
-            $this->query->groupLimit($value, $column);
+            $this->query->groupLimit($value, $this->getQualifiedFirstKeyName());
         }
 
         return $this;

@@ -4,8 +4,6 @@ namespace Illuminate\Database\Schema\Grammars;
 
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Schema\ColumnDefinition;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Fluent;
 use Illuminate\Support\Stringable;
 use RuntimeException;
@@ -338,65 +336,6 @@ class MySqlGrammar extends Grammar
             && $value = $command->column->get('startingValue', $command->column->get('from'))) {
             return 'alter table '.$this->wrapTable($blueprint).' auto_increment = '.$value;
         }
-    }
-
-    /** @inheritDoc */
-    public function compileRenameColumn(Blueprint $blueprint, Fluent $command)
-    {
-        $isMaria = $this->connection->isMaria();
-        $version = $this->connection->getServerVersion();
-
-        if (($isMaria && version_compare($version, '10.5.2', '<')) ||
-            (! $isMaria && version_compare($version, '8.0.3', '<'))) {
-            return $this->compileLegacyRenameColumn($blueprint, $command);
-        }
-
-        return parent::compileRenameColumn($blueprint, $command);
-    }
-
-    /**
-     * Compile a rename column command for legacy versions of MySQL.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    protected function compileLegacyRenameColumn(Blueprint $blueprint, Fluent $command)
-    {
-        $column = (new Collection($this->connection->getSchemaBuilder()->getColumns($blueprint->getTable())))
-            ->firstWhere('name', $command->from);
-
-        $modifiers = $this->addModifiers($column['type'], $blueprint, new ColumnDefinition([
-            'change' => true,
-            'type' => match ($column['type_name']) {
-                'bigint' => 'bigInteger',
-                'int' => 'integer',
-                'mediumint' => 'mediumInteger',
-                'smallint' => 'smallInteger',
-                'tinyint' => 'tinyInteger',
-                default => $column['type_name'],
-            },
-            'nullable' => $column['nullable'],
-            'default' => $column['default'] && (str_starts_with(strtolower($column['default']), 'current_timestamp') || $column['default'] === 'NULL')
-                ? new Expression($column['default'])
-                : $column['default'],
-            'autoIncrement' => $column['auto_increment'],
-            'collation' => $column['collation'],
-            'comment' => $column['comment'],
-            'virtualAs' => ! is_null($column['generation']) && $column['generation']['type'] === 'virtual'
-                ? $column['generation']['expression']
-                : null,
-            'storedAs' => ! is_null($column['generation']) && $column['generation']['type'] === 'stored'
-                ? $column['generation']['expression']
-                : null,
-        ]));
-
-        return sprintf('alter table %s change %s %s %s',
-            $this->wrapTable($blueprint),
-            $this->wrap($command->from),
-            $this->wrap($command->to),
-            $modifiers
-        );
     }
 
     /** @inheritDoc */
@@ -982,14 +921,8 @@ class MySqlGrammar extends Grammar
      */
     protected function typeDate(Fluent $column)
     {
-        $isMaria = $this->connection->isMaria();
-        $version = $this->connection->getServerVersion();
-
-        if ($isMaria ||
-            (! $isMaria && version_compare($version, '8.0.13', '>='))) {
-            if ($column->useCurrent) {
-                $column->default(new Expression('(CURDATE())'));
-            }
+        if ($column->useCurrent) {
+            $column->default(new Expression('(CURDATE())'));
         }
 
         return 'date';
@@ -1089,14 +1022,8 @@ class MySqlGrammar extends Grammar
      */
     protected function typeYear(Fluent $column)
     {
-        $isMaria = $this->connection->isMaria();
-        $version = $this->connection->getServerVersion();
-
-        if ($isMaria ||
-            (! $isMaria && version_compare($version, '8.0.13', '>='))) {
-            if ($column->useCurrent) {
-                $column->default(new Expression('(YEAR(CURDATE()))'));
-            }
+        if ($column->useCurrent) {
+            $column->default(new Expression('(YEAR(CURDATE()))'));
         }
 
         return 'year';
