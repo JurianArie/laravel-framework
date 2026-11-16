@@ -7,16 +7,6 @@ use Illuminate\Support\Fluent;
 
 class MariaDbGrammar extends MySqlGrammar
 {
-    /** @inheritDoc */
-    public function compileRenameColumn(Blueprint $blueprint, Fluent $command)
-    {
-        if (version_compare($this->connection->getServerVersion(), '10.5.2', '<')) {
-            return $this->compileLegacyRenameColumn($blueprint, $command);
-        }
-
-        return parent::compileRenameColumn($blueprint, $command);
-    }
-
     /**
      * Create the column definition for a uuid type.
      *
@@ -25,10 +15,6 @@ class MariaDbGrammar extends MySqlGrammar
      */
     protected function typeUuid(Fluent $column)
     {
-        if (version_compare($this->connection->getServerVersion(), '10.7.0', '<')) {
-            return 'char(36)';
-        }
-
         return 'uuid';
     }
 
