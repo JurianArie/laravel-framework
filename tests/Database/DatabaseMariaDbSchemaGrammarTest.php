@@ -52,7 +52,6 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
 
         $conn = $this->getConnection();
         $conn->allows('getConfig')->returns(null);
-        $conn->expects('getServerVersion')->returns('10.7.0');
 
         $blueprint = new Blueprint($conn, 'users');
         $blueprint->create();
@@ -884,11 +883,7 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
 
     public function testAddingDate()
     {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(true);
-        $conn->expects('getServerVersion')->returns('10.3.0');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->date('foo');
         $statements = $blueprint->toSql();
 
@@ -898,11 +893,7 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
 
     public function testAddingDateWithDefaultCurrent()
     {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(true);
-        $conn->expects('getServerVersion')->returns('10.3.0');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->date('foo')->useCurrent();
         $statements = $blueprint->toSql();
 
@@ -912,11 +903,7 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
 
     public function testAddingYear()
     {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(true);
-        $conn->expects('getServerVersion')->returns('10.3.0');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->year('birth_year');
         $statements = $blueprint->toSql();
         $this->assertCount(1, $statements);
@@ -925,11 +912,7 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
 
     public function testAddingYearWithDefaultCurrent()
     {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(true);
-        $conn->expects('getServerVersion')->returns('10.3.0');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->year('birth_year')->useCurrent();
         $statements = $blueprint->toSql();
 
@@ -1166,10 +1149,7 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
 
     public function testAddingUuid()
     {
-        $conn = $this->getConnection();
-        $conn->expects('getServerVersion')->returns('10.7.0');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->uuid('foo');
         $statements = $blueprint->toSql();
 
@@ -1177,25 +1157,9 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
         $this->assertSame('alter table `users` add `foo` uuid not null', $statements[0]);
     }
 
-    public function testAddingUuidOn106()
-    {
-        $conn = $this->getConnection();
-        $conn->expects('getServerVersion')->returns('10.6.21');
-
-        $blueprint = new Blueprint($conn, 'users');
-        $blueprint->uuid('foo');
-        $statements = $blueprint->toSql();
-
-        $this->assertCount(1, $statements);
-        $this->assertSame('alter table `users` add `foo` char(36) not null', $statements[0]);
-    }
-
     public function testAddingUuidDefaultsColumnName()
     {
-        $conn = $this->getConnection();
-        $conn->expects('getServerVersion')->returns('10.7.0');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->uuid();
         $statements = $blueprint->toSql();
 
@@ -1205,10 +1169,7 @@ class DatabaseMariaDbSchemaGrammarTest extends TestCase
 
     public function testAddingForeignUuid()
     {
-        $conn = $this->getConnection();
-        $conn->allows('getServerVersion')->returns('10.7.0');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $foreignUuid = $blueprint->foreignUuid('foo');
         $blueprint->foreignUuid('company_id')->constrained();
         $blueprint->foreignUuid('laravel_idea_id')->constrained();

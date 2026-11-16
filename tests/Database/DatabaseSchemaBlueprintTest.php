@@ -108,24 +108,13 @@ class DatabaseSchemaBlueprintTest extends TestCase
 
     public function testDefaultCurrentDate()
     {
-        $getSql = function ($grammar, $mysql57 = false) {
-            if ($grammar === 'MySql') {
-                $connection = $this->getConnection($grammar);
-                $mysql57 ? $connection->expects('getServerVersion')->returns('5.7') : $connection->expects('getServerVersion')->returns('8.0.13');
-                $connection->expects('isMaria')->returns(false);
-
-                return (new Blueprint($connection, 'users', function ($table) {
-                    $table->date('created')->useCurrent();
-                }))->toSql();
-            } else {
-                return $this->getBlueprint($grammar, 'users', function ($table) {
-                    $table->date('created')->useCurrent();
-                })->toSql();
-            }
+        $getSql = function ($grammar) {
+            return $this->getBlueprint($grammar, 'users', function ($table) {
+                $table->date('created')->useCurrent();
+            })->toSql();
         };
 
         $this->assertEquals(['alter table `users` add `created` date not null default (CURDATE())'], $getSql('MySql'));
-        $this->assertEquals(['alter table `users` add `created` date not null'], $getSql('MySql', mysql57: true));
         $this->assertEquals(['alter table "users" add column "created" date not null default CURRENT_DATE'], $getSql('Postgres'));
         $this->assertEquals(['alter table "users" add column "created" date not null default CURRENT_DATE'], $getSql('SQLite'));
         $this->assertEquals(['alter table "users" add "created" date not null default CAST(GETDATE() AS DATE)'], $getSql('SqlServer'));
@@ -161,24 +150,13 @@ class DatabaseSchemaBlueprintTest extends TestCase
 
     public function testDefaultCurrentYear()
     {
-        $getSql = function ($grammar, $mysql57 = false) {
-            if ($grammar === 'MySql') {
-                $connection = $this->getConnection($grammar);
-                $mysql57 ? $connection->expects('getServerVersion')->returns('5.7') : $connection->expects('getServerVersion')->returns('8.0.13');
-                $connection->expects('isMaria')->returns(false);
-
-                return (new Blueprint($connection, 'users', function ($table) {
-                    $table->year('birth_year')->useCurrent();
-                }))->toSql();
-            } else {
-                return $this->getBlueprint($grammar, 'users', function ($table) {
-                    $table->year('birth_year')->useCurrent();
-                })->toSql();
-            }
+        $getSql = function ($grammar) {
+            return $this->getBlueprint($grammar, 'users', function ($table) {
+                $table->year('birth_year')->useCurrent();
+            })->toSql();
         };
 
         $this->assertEquals(['alter table `users` add `birth_year` year not null default (YEAR(CURDATE()))'], $getSql('MySql'));
-        $this->assertEquals(['alter table `users` add `birth_year` year not null'], $getSql('MySql', mysql57: true));
         $this->assertEquals(['alter table "users" add column "birth_year" integer not null default EXTRACT(YEAR FROM CURRENT_DATE)'], $getSql('Postgres'));
         $this->assertEquals(['alter table "users" add column "birth_year" integer not null default (CAST(strftime(\'%Y\', \'now\') AS INTEGER))'], $getSql('SQLite'));
         $this->assertEquals(['alter table "users" add "birth_year" int not null default CAST(YEAR(GETDATE()) AS INTEGER)'], $getSql('SqlServer'));
@@ -200,72 +178,15 @@ class DatabaseSchemaBlueprintTest extends TestCase
     public function testRenameColumn()
     {
         $getSql = function ($grammar) {
-            $connection = $this->getConnection($grammar);
-
-            if ($grammar === 'MySql') {
-                $connection->expects('getServerVersion')->returns('8.0.4');
-                $connection->expects('isMaria')->returns(false);
-            }
-
-            return (new Blueprint($connection, 'users', function ($table) {
+            return $this->getBlueprint($grammar, 'users', function ($table) {
                 $table->renameColumn('foo', 'bar');
-            }))->toSql();
+            })->toSql();
         };
 
         $this->assertEquals(['alter table `users` rename column `foo` to `bar`'], $getSql('MySql'));
         $this->assertEquals(['alter table "users" rename column "foo" to "bar"'], $getSql('Postgres'));
         $this->assertEquals(['alter table "users" rename column "foo" to "bar"'], $getSql('SQLite'));
         $this->assertEquals(['sp_rename N\'"users"."foo"\', "bar", N\'COLUMN\''], $getSql('SqlServer'));
-    }
-
-    public function testNativeRenameColumnOnMysql57()
-    {
-        $connection = $this->getConnection('MySql');
-        $connection->expects('isMaria')->returns(false);
-        $connection->allows('getServerVersion')->returns('5.7');
-        $connection->getSchemaBuilder()->allows('getColumns')->returns([
-            ['name' => 'name', 'type' => 'varchar(255)', 'type_name' => 'varchar', 'nullable' => true, 'collation' => 'utf8mb4_unicode_ci', 'default' => 'foo', 'comment' => null, 'auto_increment' => false, 'generation' => null],
-            ['name' => 'id', 'type' => 'bigint unsigned', 'type_name' => 'bigint', 'nullable' => false, 'collation' => null, 'default' => null, 'comment' => 'lorem ipsum', 'auto_increment' => true, 'generation' => null],
-            ['name' => 'generated', 'type' => 'int', 'type_name' => 'int', 'nullable' => false, 'collation' => null, 'default' => null, 'comment' => null, 'auto_increment' => false, 'generation' => ['type' => 'stored', 'expression' => 'expression']],
-        ]);
-
-        $blueprint = new Blueprint($connection, 'users', function ($table) {
-            $table->renameColumn('name', 'title');
-            $table->renameColumn('id', 'key');
-            $table->renameColumn('generated', 'new_generated');
-        });
-
-        $this->assertEquals([
-            "alter table `users` change `name` `title` varchar(255) collate 'utf8mb4_unicode_ci' null default 'foo'",
-            "alter table `users` change `id` `key` bigint unsigned not null auto_increment comment 'lorem ipsum'",
-            'alter table `users` change `generated` `new_generated` int as (expression) stored not null',
-        ], $blueprint->toSql());
-    }
-
-    public function testNativeRenameColumnOnLegacyMariaDB()
-    {
-        $connection = $this->getConnection('MariaDb');
-        $connection->allows('getServerVersion')->returns('10.1.35');
-        $connection->getSchemaBuilder()->allows('getColumns')->returns([
-            ['name' => 'name', 'type' => 'varchar(255)', 'type_name' => 'varchar', 'nullable' => true, 'collation' => 'utf8mb4_unicode_ci', 'default' => 'foo', 'comment' => null, 'auto_increment' => false, 'generation' => null],
-            ['name' => 'id', 'type' => 'bigint unsigned', 'type_name' => 'bigint', 'nullable' => false, 'collation' => null, 'default' => null, 'comment' => 'lorem ipsum', 'auto_increment' => true, 'generation' => null],
-            ['name' => 'generated', 'type' => 'int', 'type_name' => 'int', 'nullable' => false, 'collation' => null, 'default' => null, 'comment' => null, 'auto_increment' => false, 'generation' => ['type' => 'stored', 'expression' => 'expression']],
-            ['name' => 'foo', 'type' => 'int', 'type_name' => 'int', 'nullable' => true, 'collation' => null, 'default' => 'NULL', 'comment' => null, 'auto_increment' => false, 'generation' => null],
-        ]);
-
-        $blueprint = new Blueprint($connection, 'users', function ($table) {
-            $table->renameColumn('name', 'title');
-            $table->renameColumn('id', 'key');
-            $table->renameColumn('generated', 'new_generated');
-            $table->renameColumn('foo', 'bar');
-        });
-
-        $this->assertEquals([
-            "alter table `users` change `name` `title` varchar(255) collate 'utf8mb4_unicode_ci' null default 'foo'",
-            "alter table `users` change `id` `key` bigint unsigned not null auto_increment comment 'lorem ipsum'",
-            'alter table `users` change `generated` `new_generated` int as (expression) stored not null',
-            'alter table `users` change `foo` `bar` int null default NULL',
-        ], $blueprint->toSql());
     }
 
     public function testDropColumn()

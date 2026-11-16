@@ -124,7 +124,6 @@ class DatabasePostgresBuilderTest extends TestCase
     {
         $connection = $this->getConnection();
         $grammar = new PostgresGrammar($connection);
-        $connection->allows('getServerVersion')->returns('12.0.0');
         $connection->expects('getSchemaGrammar')->returns($grammar);
         $connection->expects('selectFromWriteConnection')->with($grammar->compileColumns(null, 'foo'))->returns([['name' => 'some_column']]);
         $connection->expects('getTablePrefix');
@@ -140,7 +139,6 @@ class DatabasePostgresBuilderTest extends TestCase
     {
         $connection = $this->getConnection();
         $grammar = new PostgresGrammar($connection);
-        $connection->allows('getServerVersion')->returns('12.0.0');
         $connection->expects('getSchemaGrammar')->returns($grammar);
         $connection->expects('selectFromWriteConnection')->with($grammar->compileColumns(null, 'foo'))->returns([['name' => 'some_column']]);
         $connection->expects('getTablePrefix');
@@ -156,7 +154,6 @@ class DatabasePostgresBuilderTest extends TestCase
     {
         $connection = $this->getConnection();
         $grammar = new PostgresGrammar($connection);
-        $connection->allows('getServerVersion')->returns('12.0.0');
         $connection->expects('getSchemaGrammar')->returns($grammar);
         $connection->expects('selectFromWriteConnection')->with($grammar->compileColumns(null, 'foo'))->returns([['name' => 'some_column']]);
         $connection->expects('getTablePrefix');
@@ -172,7 +169,6 @@ class DatabasePostgresBuilderTest extends TestCase
     {
         $connection = $this->getConnection();
         $grammar = new PostgresGrammar($connection);
-        $connection->allows('getServerVersion')->returns('12.0.0');
         $connection->expects('getSchemaGrammar')->returns($grammar);
         $connection->expects('selectFromWriteConnection')->with($grammar->compileColumns('myapp', 'foo'))->returns([['name' => 'some_column']]);
         $connection->expects('getTablePrefix');

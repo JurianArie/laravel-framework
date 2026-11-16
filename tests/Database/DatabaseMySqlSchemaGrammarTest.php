@@ -873,11 +873,7 @@ class DatabaseMySqlSchemaGrammarTest extends TestCase
 
     public function testAddingDate()
     {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(false);
-        $conn->expects('getServerVersion')->returns('8.0.13');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->date('foo');
         $statements = $blueprint->toSql();
 
@@ -887,11 +883,7 @@ class DatabaseMySqlSchemaGrammarTest extends TestCase
 
     public function testAddingDateWithDefaultCurrent()
     {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(false);
-        $conn->expects('getServerVersion')->returns('8.0.13');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->date('foo')->useCurrent();
         $statements = $blueprint->toSql();
 
@@ -899,27 +891,9 @@ class DatabaseMySqlSchemaGrammarTest extends TestCase
         $this->assertSame('alter table `users` add `foo` date not null default (CURDATE())', $statements[0]);
     }
 
-    public function testAddingDateWithDefaultCurrentOn57()
-    {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(false);
-        $conn->expects('getServerVersion')->returns('5.7');
-
-        $blueprint = new Blueprint($conn, 'users');
-        $blueprint->date('foo')->useCurrent();
-        $statements = $blueprint->toSql();
-
-        $this->assertCount(1, $statements);
-        $this->assertSame('alter table `users` add `foo` date not null', $statements[0]);
-    }
-
     public function testAddingYear()
     {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(false);
-        $conn->expects('getServerVersion')->returns('8.0.13');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->year('birth_year');
         $statements = $blueprint->toSql();
         $this->assertCount(1, $statements);
@@ -928,30 +902,12 @@ class DatabaseMySqlSchemaGrammarTest extends TestCase
 
     public function testAddingYearWithDefaultCurrent()
     {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(false);
-        $conn->expects('getServerVersion')->returns('8.0.13');
-
-        $blueprint = new Blueprint($conn, 'users');
+        $blueprint = new Blueprint($this->getConnection(), 'users');
         $blueprint->year('birth_year')->useCurrent();
         $statements = $blueprint->toSql();
 
         $this->assertCount(1, $statements);
         $this->assertSame('alter table `users` add `birth_year` year not null default (YEAR(CURDATE()))', $statements[0]);
-    }
-
-    public function testAddingYearWithDefaultCurrentOn57()
-    {
-        $conn = $this->getConnection();
-        $conn->expects('isMaria')->returns(false);
-        $conn->expects('getServerVersion')->returns('5.7');
-
-        $blueprint = new Blueprint($conn, 'users');
-        $blueprint->year('birth_year')->useCurrent();
-        $statements = $blueprint->toSql();
-
-        $this->assertCount(1, $statements);
-        $this->assertSame('alter table `users` add `birth_year` year not null', $statements[0]);
     }
 
     public function testAddingDateTime()
